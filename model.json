@@ -1,0 +1,42 @@
+{
+  "study": "ИГГТ РКИ, NCT04833283, n=107 (66 ИГГТ / 41 контроль), УКБ № 1 им. Н.И. Пирогова, 2021-2022",
+  "method": "logistic regression, statsmodels (Python); P = 1/(1+exp(-LP)); IHGT coded 1=yes, 0=no",
+  "models": [
+    {
+      "id": "mace",
+      "outcome": "Кардиальная смерть / инфаркт миокарда / острая сердечная недостаточность (госпитальный период)",
+      "events": 20,
+      "n": 107,
+      "coefficients": { "const": -3.507, "ihgt": -2.2087, "euroscore_pct": 0.1578, "op_duration_hours": 0.3292 },
+      "or": { "ihgt": [0.11, 0.03, 0.39], "euroscore_pct": [1.17, 1.0, 1.37], "op_duration_hours": [1.39, 0.94, 2.05] },
+      "auc": 0.837,
+      "mcfadden_r2": 0.251
+    },
+    {
+      "id": "cog",
+      "outcome": "Умеренные или тяжёлые когнитивные нарушения (MoCA/MMSE, 24 ч после операции)",
+      "events": 25,
+      "n": 107,
+      "coefficients": { "const": -2.9581, "ihgt": -2.8785, "age_years": 0.0669, "op_duration_hours": -0.1429 },
+      "or": { "ihgt": [0.06, 0.02, 0.2], "age_years": [1.07, 1.01, 1.13], "op_duration_hours": [0.87, 0.59, 1.27] },
+      "auc": 0.84,
+      "mcfadden_r2": 0.272
+    },
+    {
+      "id": "aki",
+      "outcome": "Острая почечная недостаточность (ранний послеоперационный период)",
+      "events": 12,
+      "n": 107,
+      "coefficients": { "const": 2.1565, "ihgt": -1.4219, "egfr_ckdepi": -0.0658, "euroscore_pct": 0.072 },
+      "or": { "ihgt": [0.24, 0.06, 0.96], "egfr_ckdepi": [0.94, 0.89, 0.99], "euroscore_pct": [1.08, 0.89, 1.29] },
+      "auc": 0.823,
+      "mcfadden_r2": 0.211
+    }
+  ],
+  "example": {
+    "inputs": { "euroscore_pct": 3.5, "op_duration_hours": 6.5, "age_years": 62, "egfr_ckdepi": 66 },
+    "mace_p": { "ihgt": 0.046, "control": 0.307 },
+    "cog_p": { "ihgt": 0.068, "control": 0.565 }
+  },
+  "disclaimer": "For research and educational purposes. Models derived from a single cohort (n=107) without external validation; not a substitute for clinical judgement."
+}
