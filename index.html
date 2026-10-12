@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор периоперационного риска · ИГГТ</title>
+<meta name="description" content="Прогноз периоперационных осложнений кардиохирургических операций с искусственным кровообращением: логистические модели рандомизированного исследования ИГГТ (n=107).">
+<style>
+  :root {
+    --bg: #f4f7fb; --card: #ffffff; --ink: #1c2b3a; --muted: #5b6b7c;
+    --accent: #1663a8; --accent2: #0e9f6e; --warn: #b45309; --danger: #b91c1c;
+    --line: #dde5ee; --soft: #eef3f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(135deg, #10395f, #1663a8); color: #fff;
+    padding: 28px 20px 22px;
+  }
+  header .wrap { max-width: 1060px; margin: 0 auto; }
+  header h1 { margin: 0 0 6px; font-size: 1.45rem; }
+  header p { margin: 0; opacity: .92; font-size: .95rem; }
+  main { max-width: 1060px; margin: 0 auto; padding: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 18px 16px; box-shadow: 0 1px 3px rgba(16, 57, 95, .06);
+  }
+  .card h2 { margin: 0 0 12px; font-size: 1.05rem; color: var(--accent); }
+  .models { display: flex; flex-direction: column; gap: 10px; }
+  .model {
+    border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    cursor: pointer; transition: .15s; position: relative;
+  }
+  .model:hover { border-color: #9dbde0; }
+  .model.active { border-color: var(--accent); background: var(--soft); }
+  .model .t { font-weight: 600; }
+  .model .d { font-size: .85rem; color: var(--muted); }
+  .model .badge {
+    position: absolute; top: 12px; right: 12px; font-size: .72rem;
+    background: var(--accent2); color: #fff; padding: 2px 8px; border-radius: 99px;
+  }
+  label { display: block; font-size: .88rem; color: var(--muted); margin: 12px 0 4px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  input[type="range"] { flex: 1; accent-color: var(--accent); }
+  input[type="number"] {
+    width: 88px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 1rem; text-align: right;
+  }
+  .switch { display: flex; gap: 8px; margin-top: 6px; }
+  .switch button {
+    flex: 1; padding: 10px; border-radius: 10px; border: 2px solid var(--line);
+    background: #fff; cursor: pointer; font-size: .95rem;
+  }
+  .switch button.on { border-color: var(--accent); background: var(--soft); font-weight: 600; }
+  .out { text-align: center; padding: 8px 0 2px; }
+  .big { font-size: 2.6rem; font-weight: 700; line-height: 1.1; }
+  .big .pct { font-size: 1.3rem; color: var(--muted); }
+  .risk-tag {
+    display: inline-block; margin-top: 6px; padding: 4px 14px; border-radius: 99px;
+    color: #fff; font-size: .9rem; font-weight: 600;
+  }
+  .tag-low { background: var(--accent2); } .tag-mid { background: var(--warn); } .tag-high { background: var(--danger); }
+  .bars { margin-top: 16px; }
+  .bar-row { margin: 10px 0; }
+  .bar-row .lbl { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+  .track { height: 16px; background: var(--soft); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .fill { height: 100%; border-radius: 99px; transition: width .3s; }
+  .fill.ihht { background: var(--accent2); } .fill.ctrl { background: var(--danger); }
+  .arr {
+    margin-top: 14px; background: var(--soft); border-radius: 10px; padding: 10px 12px;
+    font-size: .9rem;
+  }
+  .arr b { color: var(--accent); }
+  .note { font-size: .82rem; color: var(--muted); margin-top: 12px; }
+  footer {
+    max-width: 1060px; margin: 0 auto; padding: 6px 20px 34px; color: var(--muted); font-size: .82rem;
+  }
+  .formula {
+    background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: .85rem;
+    overflow-x: auto; white-space: nowrap;
+  }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Калькулятор периоперационного риска при кардиохирургических операциях с ИК</h1>
+    <p>Логистические модели по данным рандомизированного исследования предоперационных интервальных гипокси-гипероксических тренировок (ИГГТ), NCT04833283, n = 107</p>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>1. Выберите прогнозируемый исход</h2>
+      <div class="models" id="models">
+        <div class="model active" data-model="mace">
+          <div class="badge">AUC 0,84</div>
+          <div class="t">Основные неблагоприятные кардиальные исходы</div>
+          <div class="d">кардиальная смерть, инфаркт миокарда или острая сердечная недостаточность в госпитальном периоде</div>
+        </div>
+        <div class="model" data-model="cog">
+          <div class="badge">AUC 0,84</div>
+          <div class="t">Когнитивные нарушения</div>
+          <div class="d">умеренные или тяжёлые нарушения по MoCA/MMSE через 24 ч после операции</div>
+        </div>
+        <div class="model" data-model="aki">
+          <div class="badge">AUC 0,82</div>
+          <div class="t">Острая почечная недостаточность</div>
+          <div class="d">ОПН в раннем послеоперационном периоде</div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">2. Данные пациента</h2>
+      <div id="inputs"></div>
+      <label>Группа предоперационной подготовки</label>
+      <div class="switch" id="grp">
+        <button data-g="1" class="on">ИГГТ (4–7 дней)</button>
+        <button data-g="0">Контроль / плацебо</button>
+      </div>
+      <div class="note">Калькулятор автоматически показывает прогноз для обеих групп — чтобы оценить ожидаемый эффект предоперационной подготовки.</div>
+    </section>
+
+    <section class="card">
+      <h2>3. Прогноз</h2>
+      <div class="out">
+        <div class="note" id="outLabel">Вероятность исхода при выбранной подготовке</div>
+        <div class="big" id="pSel">—</div>
+        <div class="risk-tag tag-low" id="riskTag">—</div>
+      </div>
+
+      <div class="bars">
+        <div class="bar-row">
+          <div class="lbl"><span>Без ИГГТ (контроль)</span><span id="pCtrlTxt">—</span></div>
+          <div class="track"><div class="fill ctrl" id="barCtrl" style="width:0%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="lbl"><span>С ИГГТ</span><span id="pIhhtTxt">—</span></div>
+          <div class="track"><div class="fill ihht" id="barIhht" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="arr" id="arrBox"></div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div class="note" id="interp"></div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:18px">
+    <h2>О моделях</h2>
+    <div class="note">
+      Модели построены методом логистической регрессии (Python, statsmodels) по базе рандомизированного исследования
+      ИГГТ (n = 107: 66 — ИГГТ, 41 — контроль; операции с искусственным кровообращением, УКБ № 1 им. Н.И. Пирогова, 2021–2022).
+      Дискриминация: AUC 0,82–0,84. Формула: P = 1 / (1 + exp(−LP)), LP = b<sub>0</sub> + Σ b<sub>i</sub>x<sub>i</sub>.
+      Значения коэффициентов приведены в файле <code>model.json</code> и README репозитория.
+    </div>
+    <div class="note">
+      <b>Дисклеймер.</b> Инструмент предназначен для научных и образовательных целей, оценки риска и поддержки решений
+      о предоперационной подготовке. Он не заменяет клиническое суждение, не валидирован внешними когортами и не должен
+      использоваться как единственное основание для медицинских решений.
+    </div>
+    <div class="note">
+      <b>Проверочный пример.</b> EuroSCORE II 3,5 %, операция 6,5 ч, возраст 62 года: МОС — 4,6 % с ИГГТ и 30,7 % без;
+      когнитивные нарушения — 6,8 % с ИГГТ и 56,5 % без.
+    </div>
+  </section>
+</main>
+
+<footer>
+  Диссертация Дхиф Инес: «Влияние интервальных гипокси-гипероксических тренировок на течение кардиохирургических операций с ИК и послеоперационного периода» · 3.1.20 Кардиология · Научный руководитель — проф. Ф.Ю. Копылов ·
+  <a href="https://clinicaltrials.gov/study/NCT04833283">NCT04833283</a>
+</footer>
+
+<script>
+const MODELS = {
+  mace: {
+    name: "основных неблагоприятных кардиальных исходов",
+    b0: -3.507, ihgt: -2.2087,
+    terms: [
+      { key: "euroscore", label: "EuroSCORE II, %", min: 0, max: 30, step: 0.1, def: 3.5, b: 0.1578 },
+      { key: "dur", label: "Длительность операции, ч", min: 2, max: 14, step: 0.1, def: 6.5, b: 0.3292 }
+    ],
+    formula: "LP = −3,507 − 2,2087×ИГГТ + 0,1578×EuroSCORE + 0,3292×длительность, ч",
+    interp: "События: 20 из 107. OR(ИГГТ) = 0,11 [95 % ДИ 0,03–0,39], p = 0,001. EuroSCORE и длительность операции — значимые предикторы тяжести."
+  },
+  cog: {
+    name: "умеренных/тяжёлых когнитивных нарушений",
+    b0: -2.9581, ihgt: -2.8785,
+    terms: [
+      { key: "age", label: "Возраст, лет", min: 40, max: 90, step: 1, def: 62, b: 0.0669 },
+      { key: "dur", label: "Длительность операции, ч", min: 2, max: 14, step: 0.1, def: 6.5, b: -0.1429 }
+    ],
+    formula: "LP = −2,9581 − 2,8785×ИГГТ + 0,0669×возраст − 0,1429×длительность, ч",
+    interp: "События: 25 из 107. OR(ИГГТ) = 0,06 [95 % ДИ 0,02–0,20], p < 0,001. Каждый дополнительный год жизни повышает риск примерно на 7 % относительно (OR 1,07)."
+  },
+  aki: {
+    name: "острой почечной недостаточности",
+    b0: 2.1565, ihgt: -1.4219,
+    terms: [
+      { key: "egfr", label: "СКФ (CKD-EPI), мл/мин/1,73 м²", min: 15, max: 120, step: 1, def: 66, b: -0.0658 },
+      { key: "euroscore", label: "EuroSCORE II, %", min: 0, max: 30, step: 0.1, def: 3.5, b: 0.0720 }
+    ],
+    formula: "LP = 2,1565 − 1,4219×ИГГТ − 0,0658×СКФ + 0,0720×EuroSCORE",
+    interp: "События: 12 из 107. OR(ИГГТ) = 0,24 [95 % ДИ 0,06–0,96], p = 0,044. Снижение СКФ на каждые 10 мл/мин повышает риск ОПН (OR 0,94 за 1 мл/мин)."
+  }
+};
+
+let cur = "mace", grp = 1, vals = {};
+
+function buildInputs() {
+  const box = document.getElementById("inputs");
+  box.innerHTML = "";
+  vals = {};
+  MODELS[cur].terms.forEach(t => {
+    vals[t.key] = t.def;
+    const lab = document.createElement("label");
+    lab.textContent = t.label;
+    const row = document.createElement("div");
+    row.className = "row";
+    const rng = document.createElement("input");
+    rng.type = "range"; rng.min = t.min; rng.max = t.max; rng.step = t.step; rng.value = t.def;
+    const num = document.createElement("input");
+    num.type = "number"; num.min = t.min; num.max = t.max; num.step = t.step; num.value = t.def;
+    rng.oninput = () => { vals[t.key] = +rng.value; num.value = rng.value; calc(); };
+    num.oninput = () => {
+      let v = +num.value;
+      if (isNaN(v)) return;
+      v = Math.min(t.max, Math.max(t.min, v));
+      vals[t.key] = v; rng.value = v; calc();
+    };
+    row.appendChild(rng); row.appendChild(num);
+    box.appendChild(lab); box.appendChild(row);
+  });
+}
+
+function lp(g) {
+  const m = MODELS[cur];
+  let x = m.b0 + m.ihgt * g;
+  m.terms.forEach(t => x += t.b * vals[t.key]);
+  return x;
+}
+const sigmoid = x => 1 / (1 + Math.exp(-x));
+const fmt = p => (p * 100).toLocaleString("ru-RU", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function calc() {
+  const pI = sigmoid(lp(1)), pC = sigmoid(lp(0)), pS = grp === 1 ? pI : pC;
+  document.getElementById("pSel").innerHTML = fmt(pS) + '<span class="pct"> %</span>';
+  const tag = document.getElementById("riskTag");
+  if (pS < 0.10) { tag.textContent = "Низкий риск"; tag.className = "risk-tag tag-low"; }
+  else if (pS < 0.30) { tag.textContent = "Умеренный риск"; tag.className = "risk-tag tag-mid"; }
+  else { tag.textContent = "Высокий риск"; tag.className = "risk-tag tag-high"; }
+
+  document.getElementById("pCtrlTxt").textContent = fmt(pC) + " %";
+  document.getElementById("pIhhtTxt").textContent = fmt(pI) + " %";
+  document.getElementById("barCtrl").style.width = Math.min(100, pC * 100) + "%";
+  document.getElementById("barIhht").style.width = Math.min(100, pI * 100) + "%";
+
+  const arr = pC - pI;
+  const nnt = arr > 0.001 ? Math.ceil(1 / arr) : null;
+  document.getElementById("arrBox").innerHTML =
+    "Ожидаемый эффект ИГГТ: абсолютное снижение риска — <b>" + fmt(Math.abs(arr)) + " п.п.</b>" +
+    (nnt && arr > 0 ? "; число пациентов, которым нужно провести подготовку для предотвращения одного исхода (NNT) — <b>" + nnt + "</b>." : ".");
+
+  const m = MODELS[cur];
+  document.getElementById("formulaBox").innerHTML =
+    "<b>Формула (" + m.name + "):</b> " + m.formula;
+  document.getElementById("interp").innerHTML = m.interp;
+}
+
+document.querySelectorAll(".model").forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll(".model").forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
+    cur = el.dataset.model;
+    buildInputs(); calc();
+  };
+});
+document.querySelectorAll("#grp button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("#grp button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on"); grp = +b.dataset.g; calc();
+  };
+});
+
+buildInputs(); calc();
+</script>
+</body>
+</html>
